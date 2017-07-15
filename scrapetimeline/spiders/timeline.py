@@ -15,7 +15,11 @@ class TimelineSpider(scrapy.Spider):
         filename = 'timeline.txt'
         counts = response.css('rect.day::attr(data-count)').extract()
         dates = response.css('rect.day::attr(data-date)').extract()
+        history = dict()
+        for i in range(0, len(dates)):
+            history[i] = {
+                'Date': dates[i],
+                'Counts': counts[i]
+            }
         with open(filename, 'w') as f:
-            for i in range(0, len(dates)):
-                result = 'Day: %s, Activity count: %s\n' % (dates[i], counts[i])
-                f.write(result)
+            json.dump(history, f)
