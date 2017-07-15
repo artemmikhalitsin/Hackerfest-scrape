@@ -4,8 +4,9 @@ import json
 
 app = Flask(__name__)
 
-@app.route('/')
-@app.route('/index', methods=['GET'])
+#@app.route('/')
+@app.route('/tasteful')
+@app.route('/tasteful/index', methods=['GET'])
 def index():
     title = 'Index'
     sources = ['red\dit', 'github', 'stackoverflow']
