@@ -20,10 +20,10 @@ def get_json_response(url):
     return json.loads(content)
 
 #Reddit API methods
-def rapi_comments(username, limit=25):
+def rapi_comments(username, limit=25, after=""):
     return "https://www.reddit.com/user/" + username + "/comments.json?limit=" + str(limit)
 
-def rapi_submitted(username, limit=25):
+def rapi_submitted(username, limit=25, after=""):
     return "https://www.reddit.com/user/" + username + "/submitted.json?limit=" + str(limit)
 
 def rapi_about(username):
@@ -32,13 +32,29 @@ def rapi_about(username):
 
 ### Convenience methods to use with Reddit API
 
-def get_all_comments(username, limit=25):
-    json = get_json_response(rapi_comments(username, limit))
-    return json["data"]["children"]
+def get_all_comments(username, limit=25, after=""):
+    if(limit <= 100): 
+        json = get_json_response(rapi_comments(username, limit, after))
+        return json["data"]["children"]
+    else:
+        json = get_json_response(rapi_comments(username, 100, after))
+        comments = json["data"]["children"]
+        new_after = get_comment(comments, len(comments) - 1)["name"]
+        return comments + get_all_comments(username, limit - 100, new_after)
 
-def get_all_posts(username, limit=25):
-    json = get_json_response(rapi_submitted(username, limit))
-    return json["data"]["children"]
+def get_all_posts(username, limit=25, after=""):
+    if(limit <= 100): 
+        json = get_json_response(rapi_submitted(username, limit, after))
+        return json["data"]["children"]
+    else: 
+        json = get_json_response(rapi_submitted(username, 100, after))
+        submitted = json["data"]["children"]
+        new_after = get_post(submitted, len(submitted) - 1)["name"]
+        return submitted + get_all_posts(username, limit - 100, new_after)
+
+#def get_all_posts(username, limit=25):
+#    json = get_json_response(rapi_submitted(username, limit))
+#    return json["data"]["children"]
 
 # Get overall link karma from user
 def get_linkkarma(user_about):
@@ -66,25 +82,36 @@ def get_post_updown(post):
 
 
 ### Vitae functions
+## Item: Either a comment or a post
 
 def vt_relevant_items(items, relevance_set):
     return list(filter(lambda x: x["data"]["subreddit"] in relevance_set, items))
 
+def vt_extract_comments(items):
+    return list(filter(lambda x: x["data"]["name"][:2] == "t1", items))
+
+def vt_extract_posts(items):
+    return list(filter(lambda x: x["data"]["name"][:2] == "t3", items))
+
 def main():
     html = get_html("https://www.quora.com/What-subreddits-should-a-software-engineer-follow")
     sub_list = get_subreddits(html)
-#    for i in range(0,len(sub_list)):
-#        print(sub_list[i])
 
     sub_list.add("archlinux")
     print(sub_list)
 
-    comments = vt_relevant_items(get_all_comments("wadawalnut", 100),sub_list)
+    comments = get_all_comments("wadawalnut", 300)
+    posts = get_all_posts("wadawalnut", 300)
+
+    items = vt_relevant_items(comments + posts, sub_list)
+    print("Retrieved " + str(len(items)) + " from wadawalnut")
+    cmt = vt_extract_comments(items)
+    pst = vt_extract_posts(items)
+    print("\t Of which " + str(len(cmt)) + " are comments and " + str(len(pst)) + " are posts.")
     for i in range(0,2):
+        print ("COMMENT\n==========")
         print(comments[i]["data"]["body"])
-#    commentone = get_comment(comments, 1)
-#    print(commentone["body"])
-#    print("Above comment's updown: " + str(get_comment_updown(commentone)))
+        print ()
     wada_about = get_json_response(rapi_about("wadawalnut"))
     print("wadawalnut's link karma: " + str(get_linkkarma(wada_about)))
     print("wadawalnut's comment karma: " + str(get_commentkarma(wada_about)))
