@@ -15,7 +15,9 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
+from djangoserver.views import parseprofile
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'.*submitprofile.*', parseprofile),
 ]

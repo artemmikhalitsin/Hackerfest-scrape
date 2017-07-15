@@ -21,16 +21,53 @@ var FormPane = React.createClass({
 //			this.setState({hasimg: false});
 //		}
 	},
-	onButtonClick: function() {
-		console.log("Pressed");
+	checkIfUsernameExistsInReddit: function(json) {
+		if(json) {
+			$("body").css({"backgroundColor": "#ff2222"});
+			$("body").animate({"backgroundColor": "#ff6600"},2000);
+			return;
+		}
 		var old = this.state.profiles.slice();
 		old.push(this.state.value);
 		this.setState({
 			profiles: old
 		});
 	},
+	onButtonClick: function() {
+		var reddit = new RegExp('reddit.com/u/([a-zA-Z0-9]+)');
+		var redditresult = reddit.exec(this.state.value);
+		$.ajax({
+			url: "https://www.reddit.com/api/username_available.json?user=" + redditresult[1],
+			type: "GET",
+			dataType: "json",
+		})
+		.done(this.checkIfUsernameExistsInReddit)
+//		console.log("pressed");
+//		var old = this.state.profiles.slice();
+//		old.push(this.state.value);
+//		this.setState({
+//			profiles: old
+//		});
+	},
+	finalSubmit: function() {
+		var reddit = new RegExp('reddit.com/u/([a-zA-Z0-9]+)');
+		if(this.state.profiles.length == 0) return;
+		var redditresult = reddit.exec(this.state.profiles[0]);
+		if( redditresult != null){
+			$.ajax({
+				url: "../../../submitprofile?username=" + redditresult[0] + "&platform=reddit",
+				type: "GET",
+				dataType: "json",
+			})
+			.done(function(json) {
+				alert("Score is: " + json.score);
+			});
+		}
+	},
 	render: function() {
-		if(this.state.value == "reddit") {
+		var reddit = new RegExp('reddit.com');
+//		if(this.state.value == "reddit") {
+		if(reddit.exec(this.state.value) != null) {
 			$("body").animate({'backgroundColor': "#ff6600"}, 300);
 			console.log("ok");
 		}
@@ -44,6 +81,8 @@ var FormPane = React.createClass({
 					<h1>{this.state.value}</h1>
 				</div>
 				<ProfileListView profiles={this.state.profiles} />
+				<br />
+				<button onClick={this.finalSubmit} id="finalsubmit">Submit</button>
 			</div>
 		);
 	}
